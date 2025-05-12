@@ -2,8 +2,15 @@ import time
 import math
 import matplotlib.pyplot as plt
 import numpy as np
+from decimal import Decimal
 from algorithms.leibniz import calculate_leibniz
 from algorithms.monte_carlo import calculate_monte_carlo
+from algorithms.advanced_methods import (
+    calculate_nilakantha,
+    calculate_gauss_legendre,
+    calculate_chudnovsky,
+    estimate_error
+)
 from algorithms.visualization import create_monte_carlo_animation, save_animation
 
 def compare_methods(max_terms: int = 1_000_000, step: int = 100_000):
@@ -70,40 +77,74 @@ def visualize_monte_carlo(save_gif: bool = True):
     else:
         plt.show()
 
+def compare_all_methods(max_terms: int = 1_000_000):
+    """比较所有方法的性能和精度"""
+    methods = {
+        '莱布尼茨级数': lambda n: calculate_leibniz(n),
+        '蒙特卡罗方法': lambda n: calculate_monte_carlo(n),
+        'Nilakantha级数': lambda n: calculate_nilakantha(n//100),  # 使用较少的项数因为收敛更快
+        'Gauss-Legendre': lambda n: calculate_gauss_legendre(int(np.log2(n))),  # 迭代次数随项数对数增长
+        'Chudnovsky': lambda n: float(calculate_chudnovsky(int(np.log10(n)) + 10))  # 精度随项数对数增长
+    }
+    
+    results = {}
+    for method_name, method_func in methods.items():
+        start_time = time.perf_counter()
+        pi_value = method_func(max_terms)
+        compute_time = time.perf_counter() - start_time
+        error = estimate_error(pi_value, method_name)
+        results[method_name] = {
+            'value': pi_value,
+            'time': compute_time,
+            'error': error
+        }
+    
+    return results
+
+def plot_comparison(results: dict):
+    """绘制各方法性能和精度对比图"""
+    method_names = list(results.keys())
+    times = [results[name]['time'] for name in method_names]
+    errors = [results[name]['error'] for name in method_names]
+    
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6))
+    
+    # 计算时间对比
+    ax1.bar(method_names, times)
+    ax1.set_title('计算时间对比')
+    ax1.set_ylabel('时间 (秒)')
+    plt.setp(ax1.xaxis.get_majorticklabels(), rotation=45, ha='right')
+    
+    # 误差对比（使用对数刻度）
+    ax2.bar(method_names, errors)
+    ax2.set_yscale('log')
+    ax2.set_title('相对误差对比 (对数刻度)')
+    ax2.set_ylabel('相对误差')
+    plt.setp(ax2.xaxis.get_majorticklabels(), rotation=45, ha='right')
+    
+    plt.tight_layout()
+    plt.show()
+
 def main():
-    print("计算π值并比较两种方法的性能...\n")
+    print("计算π值并比较各种方法...\n")
     
-    # 使用较大的项数进行单次计算
-    n = 1_000_000
-    
-    # 莱布尼茨方法
-    start_time = time.perf_counter()
-    leibniz_pi = calculate_leibniz(n)
-    leibniz_time = time.perf_counter() - start_time
-    
-    # 蒙特卡罗方法
-    start_time = time.perf_counter()
-    monte_carlo_pi = calculate_monte_carlo(n)
-    monte_carlo_time = time.perf_counter() - start_time
+    # 比较所有方法
+    results = compare_all_methods()
     
     # 输出结果
-    print(f"真实的π值: {math.pi}")
-    print("\n莱布尼茨公式:")
-    print(f"计算值: {leibniz_pi:.10f}")
-    print(f"误差: {abs(leibniz_pi - math.pi):.10f}")
-    print(f"计算时间: {leibniz_time:.3f}秒")
+    print(f"真实的π值: {math.pi}\n")
+    for method_name, result in results.items():
+        print(f"{method_name}:")
+        print(f"计算值: {result['value']:.12f}")
+        print(f"相对误差: {result['error']:.2e}")
+        print(f"计算时间: {result['time']:.3f}秒\n")
     
-    print("\n蒙特卡罗方法:")
-    print(f"计算值: {monte_carlo_pi:.10f}")
-    print(f"误差: {abs(monte_carlo_pi - math.pi):.10f}")
-    print(f"计算时间: {monte_carlo_time:.3f}秒")
+    # 绘制对比图
+    print("正在生成性能和精度对比图...")
+    plot_comparison(results)
     
-    # 绘制性能和精度对比图
-    print("\n正在生成性能和精度对比图...")
-    terms, l_errors, m_errors, l_times, m_times = compare_methods()
-    plot_results(terms, l_errors, m_errors, l_times, m_times)
-    
-    # 创建动态可视化
+    # 创建蒙特卡罗方法的动态可视化
+    print("\n创建蒙特卡罗方法的动态可视化...")
     visualize_monte_carlo(save_gif=True)
 
 if __name__ == "__main__":
