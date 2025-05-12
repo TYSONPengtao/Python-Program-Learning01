@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from algorithms.leibniz import calculate_leibniz
 from algorithms.monte_carlo import calculate_monte_carlo
+from algorithms.visualization import create_monte_carlo_animation, save_animation
 
 def compare_methods(max_terms: int = 1_000_000, step: int = 100_000):
     """比较两种方法的性能和精度"""
@@ -57,6 +58,18 @@ def plot_results(terms, leibniz_errors, monte_carlo_errors, leibniz_times, monte
     plt.tight_layout()
     plt.show()
 
+def visualize_monte_carlo(save_gif: bool = True):
+    """创建蒙特卡罗方法的动态可视化"""
+    print("\n创建蒙特卡罗方法的动态可视化...")
+    animation = create_monte_carlo_animation(num_points=1000, frames=100)
+    
+    if save_gif:
+        print("正在保存动画...")
+        save_animation(animation, 'pi_calculation.gif')
+        print("动画已保存为 'pi_calculation.gif'")
+    else:
+        plt.show()
+
 def main():
     print("计算π值并比较两种方法的性能...\n")
     
@@ -89,6 +102,9 @@ def main():
     print("\n正在生成性能和精度对比图...")
     terms, l_errors, m_errors, l_times, m_times = compare_methods()
     plot_results(terms, l_errors, m_errors, l_times, m_times)
+    
+    # 创建动态可视化
+    visualize_monte_carlo(save_gif=True)
 
 if __name__ == "__main__":
     main()
